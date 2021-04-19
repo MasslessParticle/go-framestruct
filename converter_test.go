@@ -106,6 +106,20 @@ func TestToDataframe(t *testing.T) {
 		require.Len(t, frame.Fields, 0)
 	})
 
+	t.Run("it ignores fields when the struct tag is a '-'", func(t *testing.T) {
+		strct := structWithIgnoredTag{"foo", "bar", "baz"}
+
+		frame, err := framestruct.ToDataframe("results", strct)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 2)
+		require.Equal(t, "first-thing", frame.Fields[0].Name)
+		require.Equal(t, "foo", frame.Fields[0].At(0))
+
+		require.Equal(t, "third-thing", frame.Fields[1].Name)
+		require.Equal(t, "baz", frame.Fields[1].At(0))
+	})
+
 	t.Run("it flattens nested structs with dot-names", func(t *testing.T) {
 		strct := []nested1{
 			{"foo", 36, "baz",
@@ -229,6 +243,12 @@ type structWithTags struct {
 	Thing1 string  `frame:"first-thing"`
 	Thing2 string  `frame:"second-thing"`
 	Thing3 nested2 `frame:"third-thing"`
+}
+
+type structWithIgnoredTag struct {
+	Thing1 string `frame:"first-thing"`
+	Thing2 string `frame:"-"`
+	Thing3 string `frame:"third-thing"`
 }
 
 type unsupportedType struct {

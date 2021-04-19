@@ -15,6 +15,7 @@ var (
 	fields     map[string]*data.Field
 )
 
+// ToDataframe flattens an arbitrary struct or slice of sructs into a *data.Frame
 func ToDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 	fields = make(map[string]*data.Field)
 	fieldNames = make([]string, 0)
@@ -67,6 +68,10 @@ func makeFields(v reflect.Value, prefix string) error {
 
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanInterface() {
+			continue
+		}
+
+		if tag := v.Type().Field(i).Tag.Get(frameTag); tag == "-" {
 			continue
 		}
 
