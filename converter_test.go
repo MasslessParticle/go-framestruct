@@ -3,7 +3,7 @@ package framestruct_test
 import (
 	"testing"
 
-	"github.com/grafana/go-framestruct"
+	"github.com/masslessparticle/go-framestruct"
 	"github.com/stretchr/testify/require"
 )
 
