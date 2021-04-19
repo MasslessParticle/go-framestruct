@@ -71,11 +71,12 @@ func makeFields(v reflect.Value, prefix string) error {
 			continue
 		}
 
-		if tag := v.Type().Field(i).Tag.Get(frameTag); tag == "-" {
+		structField := v.Type().Field(i)
+		if structField.Tag.Get(frameTag) == "-" {
 			continue
 		}
 
-		fieldName := fieldName(v.Type().Field(i), prefix)
+		fieldName := fieldName(structField, prefix)
 		switch v.Field(i).Kind() {
 		case reflect.Struct:
 			makeFields(v.Field(i), fieldName)
