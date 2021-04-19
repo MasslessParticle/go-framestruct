@@ -7,7 +7,7 @@ into grafana data.Frame pointers.
 
 Take a struct with supported types and call `ToDataframe`.
 
-```
+```go
 package main
 
 import (
@@ -47,6 +47,9 @@ func main() {
 
 	fmt.Println(frame.Fields[0].Name)
 	fmt.Println(frame.Fields[0].At(0))
+
+	fmt.Println(frame.Fields[2].Name)
+	fmt.Println(frame.Fields[2].At(0))
 }
 ```
 
@@ -59,10 +62,12 @@ first-thing
 foo
 ```
 
-## Struct Tags
+## Field Names
 
 By default, framestruct will use the name of the struct field as the Dataframe column name.
 To change this behavior, use the `frame` struct tag. To ignore a field, use `-`.
+
+For nested structs, framestruct with name the Dataframe column in the form `parent.child`
 
 ## Running Tests
 
