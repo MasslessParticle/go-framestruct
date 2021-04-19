@@ -2,6 +2,7 @@ package framestruct_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/masslessparticle/go-framestruct"
 	"github.com/stretchr/testify/require"
@@ -215,6 +216,41 @@ func TestToDataframe(t *testing.T) {
 		_, err = framestruct.ToDataframe("???", "can't do a string either")
 		require.Error(t, err)
 	})
+
+	// This test fails when run with -race when it's not threadsafe
+	t.Run("it is threadsafe", func(t *testing.T) {
+
+		start := make(chan struct{})
+		end := make(chan struct{})
+
+		go convertStruct(start, end)
+		go convertStruct(start, end)
+
+		close(start)
+		time.Sleep(20 * time.Millisecond)
+		close(end)
+	})
+}
+
+func convertStruct(start, end chan struct{}) {
+	strct := structWithTags{
+		"foo",
+		"bar",
+		nested2{
+			true,
+			100,
+		},
+	}
+
+	<-start
+	for {
+		select {
+		case <-end:
+			return
+		default:
+			framestruct.ToDataframe("frame", strct)
+		}
+	}
 }
 
 type noExportedFields struct {
