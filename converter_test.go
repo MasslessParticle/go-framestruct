@@ -147,6 +147,33 @@ func TestToDataframe(t *testing.T) {
 		require.Equal(t, int64(101), frame.Fields[4].At(1))
 	})
 
+	t.Run("it uses struct tags if they're present", func(t *testing.T) {
+		strct := structWithTags{
+			"foo",
+			"bar",
+			nested2{
+				true,
+				100,
+			},
+		}
+
+		frame, err := framestruct.ToDataframe("results", strct)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 4)
+		require.Equal(t, "first-thing", frame.Fields[0].Name)
+		require.Equal(t, "foo", frame.Fields[0].At(0))
+
+		require.Equal(t, "second-thing", frame.Fields[1].Name)
+		require.Equal(t, "bar", frame.Fields[1].At(0))
+
+		require.Equal(t, "third-thing.Thing5", frame.Fields[2].Name)
+		require.Equal(t, true, frame.Fields[2].At(0))
+
+		require.Equal(t, "third-thing.Thing6", frame.Fields[3].Name)
+		require.Equal(t, int64(100), frame.Fields[3].At(0))
+	})
+
 	t.Run("it returns an error when the struct contains an unsupported type", func(t *testing.T) {
 		strct := unsupportedType{32}
 
@@ -196,6 +223,12 @@ type nested1 struct {
 type nested2 struct {
 	Thing5 bool
 	Thing6 int64
+}
+
+type structWithTags struct {
+	Thing1 string  `frame:"first-thing"`
+	Thing2 string  `frame:"second-thing"`
+	Thing3 nested2 `frame:"third-thing"`
 }
 
 type unsupportedType struct {

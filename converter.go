@@ -8,6 +8,8 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
+const frameTag = "frame"
+
 var (
 	fieldNames []string
 	fields     map[string]*data.Field
@@ -97,10 +99,15 @@ func createField(v reflect.Value, fieldName string) error {
 }
 
 func fieldName(v reflect.StructField, prefix string) string {
-	if prefix == "" {
-		return v.Name
+	fName := v.Name
+	if tag := v.Tag.Get(frameTag); tag != "" {
+		fName = tag
 	}
-	return fmt.Sprintf("%s.%s", prefix, v.Name)
+
+	if prefix == "" {
+		return fName
+	}
+	return fmt.Sprintf("%s.%s", prefix, fName)
 }
 
 func ensureValue(v reflect.Value) reflect.Value {
