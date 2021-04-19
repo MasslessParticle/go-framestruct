@@ -60,6 +60,8 @@ FrameName
 3
 first-thing
 foo
+third-thing.Thing6
+100
 ```
 
 ## Field Names
