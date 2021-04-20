@@ -76,11 +76,13 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 		}
 
 		structField := v.Type().Field(i)
-		if structField.Tag.Get(frameTag) == "-" {
+		fieldNameFromTag := structField.Tag.Get(frameTag)
+
+		if fieldNameFromTag == "-" {
 			continue
 		}
 
-		fieldName := c.fieldName(structField, prefix)
+		fieldName := c.fieldName(structField.Name, fieldNameFromTag, prefix)
 		switch field.Kind() {
 		case reflect.Struct:
 			c.makeFields(field, fieldName)
@@ -108,10 +110,10 @@ func (c *converter) createField(v reflect.Value, fieldName string) error {
 	return nil
 }
 
-func (c *converter) fieldName(v reflect.StructField, prefix string) string {
-	fName := v.Name
-	if tag := v.Tag.Get(frameTag); tag != "" {
-		fName = tag
+func (c *converter) fieldName(fieldName, fieldNameFromTag, prefix string) string {
+	fName := fieldName
+	if fieldNameFromTag != "" {
+		fName = fieldNameFromTag
 	}
 
 	if prefix == "" {
