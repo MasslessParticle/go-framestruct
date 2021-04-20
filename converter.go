@@ -3,6 +3,7 @@ package framestruct
 import (
 	"errors"
 	"reflect"
+	"strings"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
@@ -12,12 +13,14 @@ const frameTag = "frame"
 type converter struct {
 	fieldNames []string
 	fields     map[string]*data.Field
+	tags       []string
 }
 
 // ToDataframe flattens an arbitrary struct or slice of structs into a *data.Frame
 func ToDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 	cr := &converter{
 		fields: make(map[string]*data.Field),
+		tags:   make([]string, 2),
 	}
 
 	return cr.toDataframe(name, toConvert)
@@ -77,13 +80,13 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 		}
 
 		structField := v.Type().Field(i)
-		fieldNameFromTag := structField.Tag.Get(frameTag)
+		tags := structField.Tag.Get(frameTag)
 
-		if fieldNameFromTag == "-" {
+		if tags == "-" {
 			continue
 		}
 
-		fieldName := c.fieldName(structField.Name, fieldNameFromTag, prefix)
+		fieldName := c.fieldName(structField.Name, tags, prefix)
 		switch field.Kind() {
 		case reflect.Struct:
 			if err := c.makeFields(field, fieldName); err != nil {
@@ -113,17 +116,21 @@ func (c *converter) createField(v reflect.Value, fieldName string) error {
 	return nil
 }
 
-func (c *converter) fieldName(fieldName, fieldNameFromTag, prefix string) string {
-	fName := fieldName
-	if fieldNameFromTag != "" {
-		fName = fieldNameFromTag
+func (c *converter) fieldName(fieldName, tags, prefix string) string {
+	c.parseTags(tags, ",")
+	if c.tags[1] == "omitparent" {
+		return ""
+	}
+
+	if c.tags[0] != "" {
+		fieldName = c.tags[0]
 	}
 
 	if prefix == "" {
-		return fName
+		return fieldName
 	}
 
-	return prefix + "." + fName
+	return prefix + "." + fieldName
 }
 
 func (c *converter) ensureValue(v reflect.Value) reflect.Value {
@@ -131,4 +138,23 @@ func (c *converter) ensureValue(v reflect.Value) reflect.Value {
 		v = v.Elem()
 	}
 	return v
+}
+
+func (c *converter) parseTags(s, sep string) {
+	// if we do it this way, we avoid all the allocs
+	// of strings.Split
+	c.tags[0] = ""
+	c.tags[1] = ""
+
+	i := 0
+	for i < 2 {
+		m := strings.Index(s, sep)
+		if m < 0 {
+			break
+		}
+		c.tags[i] = s[:m]
+		s = s[m+len(sep):]
+		i++
+	}
+	c.tags[i] = s
 }
