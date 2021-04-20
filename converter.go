@@ -2,10 +2,8 @@ package framestruct
 
 import (
 	"errors"
-	"fmt"
-	"reflect"
-
 	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"reflect"
 )
 
 const frameTag = "frame"
@@ -118,7 +116,8 @@ func (c *converter) fieldName(v reflect.StructField, prefix string) string {
 	if prefix == "" {
 		return fName
 	}
-	return fmt.Sprintf("%s.%s", prefix, fName)
+
+	return prefix + "." + fName
 }
 
 func (c *converter) ensureValue(v reflect.Value) reflect.Value {
