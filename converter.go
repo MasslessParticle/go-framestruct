@@ -13,7 +13,7 @@ type converter struct {
 	fields     map[string]*data.Field
 }
 
-// ToDataframe flattens an arbitrary struct or slice of sructs into a *data.Frame
+// ToDataframe flattens an arbitrary struct or slice of structs into a *data.Frame
 func ToDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 	cr := &converter{
 		fields: make(map[string]*data.Field),
@@ -66,7 +66,7 @@ func (c *converter) convertField(f reflect.Value) error {
 
 func (c *converter) makeFields(v reflect.Value, prefix string) error {
 	if v.Kind() != reflect.Struct {
-		return errors.New("unspported type: cannot convert types witout fields")
+		return errors.New("unsupported type: cannot convert types without fields")
 	}
 
 	for i := 0; i < v.NumField(); i++ {
