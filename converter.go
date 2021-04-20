@@ -70,7 +70,8 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 	}
 
 	for i := 0; i < v.NumField(); i++ {
-		if !v.Field(i).CanInterface() {
+		field := v.Field(i)
+		if !field.CanInterface() {
 			continue
 		}
 
@@ -80,14 +81,14 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 		}
 
 		fieldName := c.fieldName(structField, prefix)
-		switch v.Field(i).Kind() {
+		switch field.Kind() {
 		case reflect.Struct:
-			c.makeFields(v.Field(i), fieldName)
+			c.makeFields(field, fieldName)
 		default:
-			if err := c.createField(v.Field(i), fieldName); err != nil {
+			if err := c.createField(field, fieldName); err != nil {
 				return err
 			}
-			c.fields[fieldName].Append(v.Field(i).Interface())
+			c.fields[fieldName].Append(field.Interface())
 		}
 	}
 	return nil
