@@ -1,16 +1,22 @@
 package framestruct_test
 
 import (
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"testing"
 	"time"
 
 	"github.com/masslessparticle/go-framestruct"
 )
 
+// This is here to avoid compiler optimizations that
+// could remove the actual call we are benchmarking
+// during benchmarks
+var benchmarkResult *data.Frame
+
 func benchMarshal(b *testing.B, v interface{}) {
 	b.Run("marshal", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			framestruct.ToDataframe("frame", v)
+			benchmarkResult, _ = framestruct.ToDataframe("frame", v)
 		}
 	})
 }
