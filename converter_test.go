@@ -197,6 +197,19 @@ func TestToDataframe(t *testing.T) {
 		require.Equal(t, "unsupported type int", err.Error())
 	})
 
+	t.Run("it returns an error when a nested struct contains an unsupported type", func(t *testing.T) {
+		strct := supportedWithUnsupported{
+			"foo",
+			unsupportedType{
+				100,
+			},
+		}
+
+		_, err := framestruct.ToDataframe("results", strct)
+		require.Error(t, err)
+		require.Equal(t, "unsupported type int", err.Error())
+	})
+
 	t.Run("it returns an error when any struct contains an unsupported type", func(t *testing.T) {
 		strct := unsupportedType{32}
 
@@ -285,6 +298,11 @@ type structWithIgnoredTag struct {
 	Thing1 string `frame:"first-thing"`
 	Thing2 string `frame:"-"`
 	Thing3 string `frame:"third-thing"`
+}
+
+type supportedWithUnsupported struct {
+	Foo string
+	Bar unsupportedType
 }
 
 type unsupportedType struct {

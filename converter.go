@@ -2,8 +2,9 @@ package framestruct
 
 import (
 	"errors"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"reflect"
+
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
 const frameTag = "frame"
@@ -85,7 +86,9 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 		fieldName := c.fieldName(structField.Name, fieldNameFromTag, prefix)
 		switch field.Kind() {
 		case reflect.Struct:
-			c.makeFields(field, fieldName)
+			if err := c.makeFields(field, fieldName); err != nil {
+				return err
+			}
 		default:
 			if err := c.createField(field, fieldName); err != nil {
 				return err
