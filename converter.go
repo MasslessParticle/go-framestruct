@@ -118,7 +118,7 @@ func (c *converter) createField(v reflect.Value, fieldName string) error {
 
 func (c *converter) fieldName(fieldName, tags, prefix string) string {
 	c.parseTags(tags, ",")
-	if c.tags[1] == "omitparent" {
+	if c.tags[0] == "omitparent" || c.tags[1] == "omitparent" {
 		return ""
 	}
 

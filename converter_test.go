@@ -197,12 +197,16 @@ func TestToDataframe(t *testing.T) {
 				true,
 				100,
 			},
+			nested3{
+				false,
+				200,
+			},
 		}
 
 		frame, err := framestruct.ToDataframe("results", strct)
 		require.Nil(t, err)
 
-		require.Len(t, frame.Fields, 4)
+		require.Len(t, frame.Fields, 6)
 		require.Equal(t, "first-thing", frame.Fields[0].Name)
 		require.Equal(t, "foo", frame.Fields[0].At(0))
 
@@ -214,6 +218,12 @@ func TestToDataframe(t *testing.T) {
 
 		require.Equal(t, "Thing6", frame.Fields[3].Name)
 		require.Equal(t, int64(100), frame.Fields[3].At(0))
+
+		require.Equal(t, "Thing7", frame.Fields[4].Name)
+		require.Equal(t, false, frame.Fields[4].At(0))
+
+		require.Equal(t, "Thing8", frame.Fields[5].Name)
+		require.Equal(t, int64(200), frame.Fields[5].At(0))
 	})
 
 	t.Run("it returns an error when the struct contains an unsupported type", func(t *testing.T) {
@@ -315,6 +325,11 @@ type nested2 struct {
 	Thing6 int64
 }
 
+type nested3 struct {
+	Thing7 bool
+	Thing8 int64
+}
+
 type structWithTags struct {
 	Thing1 string  `frame:"first-thing"`
 	Thing2 string  `frame:"second-thing"`
@@ -325,6 +340,7 @@ type omitParentStruct struct {
 	Thing1 string  `frame:"first-thing"`
 	Thing2 string  `frame:"second-thing"`
 	Thing3 nested2 `frame:",omitparent"`
+	Thing4 nested3 `frame:"omitparent"`
 }
 
 type structWithIgnoredTag struct {
