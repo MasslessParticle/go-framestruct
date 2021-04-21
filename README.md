@@ -64,12 +64,11 @@ third-thing.Thing6
 100
 ```
 
-## Field Names
+## Struct Tags
 
-By default, framestruct will use the name of the struct field as the Dataframe column name.
-To change this behavior, use the `frame` struct tag. To ignore a field, use `-`.
-
-For nested structs, framestruct with name the Dataframe column in the form `parent.child`
+- Use the `frame` struct tag to define a custom name. By default, framestruct will use the name of the struct field as the Dataframe column name.
+- Use `-` to exclude a field from the output.
+- Use `omitparent` to use the name of `child` rather than `parent.child` as the name of a column coming from a nested struct.
 
 ## Running Tests
 
