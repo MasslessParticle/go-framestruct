@@ -20,6 +20,7 @@ type structWithTags struct {
 	Thing1 string  `frame:"first-thing"`
 	Thing2 string  `frame:"-"`
 	Thing3 nested2 `frame:"third-thing"`
+	Thing4 nested2 `frame:",omitparent"`
 }
 
 type nested2 struct {
@@ -34,6 +35,10 @@ func main() {
 		nested2{
 			true,
 			100,
+		},
+		nested2{
+			false,
+			200,
 		},
 	}
 
@@ -50,6 +55,9 @@ func main() {
 
 	fmt.Println(frame.Fields[2].Name)
 	fmt.Println(frame.Fields[2].At(0))
+
+	fmt.Println(frame.Fields[4].Name)
+	fmt.Println(frame.Fields[4].At(0))
 }
 ```
 
@@ -62,6 +70,8 @@ first-thing
 foo
 third-thing.Thing6
 100
+Thing6
+200
 ```
 
 ## Struct Tags
