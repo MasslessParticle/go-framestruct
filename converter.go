@@ -3,6 +3,7 @@ package framestruct
 import (
 	"errors"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -14,6 +15,7 @@ type converter struct {
 	fieldNames []string
 	fields     map[string]*data.Field
 	tags       []string
+	anyMap     bool
 }
 
 // ToDataframe flattens an arbitrary struct or slice of structs into a *data.Frame
@@ -28,17 +30,19 @@ func ToDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 
 func (c *converter) toDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 	v := c.ensureValue(reflect.ValueOf(toConvert))
-	switch v.Kind() {
-	case reflect.Slice:
-		if err := c.convertSlice(v); err != nil {
-			return nil, err
-		}
-	case reflect.Struct:
-		if err := c.convertField(v); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, errors.New("unsupported type: can only convert structs or slices of structs")
+
+	if !supportedType(v) {
+		return nil, errors.New("unsupported type: can only convert structs, slices, and maps")
+	}
+
+	if err := c.handleValue(v, ""); err != nil {
+		return nil, err
+	}
+
+	if c.anyMap {
+		// Ensure stable order of fields across
+		// runs, because maps
+		sort.Strings(c.fieldNames)
 	}
 
 	//add to frame, iterate to preserve order
@@ -50,16 +54,42 @@ func (c *converter) toDataframe(name string, toConvert interface{}) (*data.Frame
 	return frame, nil
 }
 
+func (c *converter) convertMap(toConvert interface{}, prefix string) error {
+	c.anyMap = true
+	m, ok := toConvert.(map[string]interface{})
+	if !ok {
+		return errors.New("map must be map[string]interface{}")
+	}
+
+	for name, value := range m {
+		fieldName := c.fieldName(name, "", prefix)
+		v := c.ensureValue(reflect.ValueOf(value))
+		if err := c.handleValue(v, fieldName); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (c *converter) convertSlice(s reflect.Value) error {
 	for i := 0; i < s.Len(); i++ {
-		if err := c.convertField(s.Index(i)); err != nil {
-			return err
+		v := s.Index(i)
+		switch v.Kind() {
+		case reflect.Map:
+			if err := c.convertMap(v.Interface(), ""); err != nil {
+				return err
+			}
+		default:
+			if err := c.convertStruct(v); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (c *converter) convertField(f reflect.Value) error {
+func (c *converter) convertStruct(f reflect.Value) error {
 	v := c.ensureValue(f)
 	if err := c.makeFields(v, ""); err != nil {
 		return err
@@ -87,22 +117,36 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 		}
 
 		fieldName := c.fieldName(structField.Name, tags, prefix)
-		switch field.Kind() {
-		case reflect.Struct:
-			if err := c.makeFields(field, fieldName); err != nil {
-				return err
-			}
-		default:
-			if err := c.createField(field, fieldName); err != nil {
-				return err
-			}
-			c.fields[fieldName].Append(field.Interface())
+		if err := c.handleValue(field, fieldName); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (c *converter) createField(v reflect.Value, fieldName string) error {
+func (c *converter) handleValue(field reflect.Value, fieldName string) error {
+	switch field.Kind() {
+	case reflect.Slice:
+		if err := c.convertSlice(field); err != nil {
+			return err
+		}
+	case reflect.Struct:
+		if err := c.makeFields(field, fieldName); err != nil {
+			return err
+		}
+	case reflect.Map:
+		if err := c.convertMap(field.Interface(), fieldName); err != nil {
+			return err
+		}
+	default:
+		if err := c.upsertField(field, fieldName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *converter) upsertField(v reflect.Value, fieldName string) error {
 	if _, exists := c.fields[fieldName]; !exists {
 		//keep track of unique fields in the order they appear
 		c.fieldNames = append(c.fieldNames, fieldName)
@@ -113,6 +157,7 @@ func (c *converter) createField(v reflect.Value, fieldName string) error {
 
 		c.fields[fieldName] = data.NewField(fieldName, nil, v)
 	}
+	c.fields[fieldName].Append(v.Interface())
 	return nil
 }
 

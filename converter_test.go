@@ -85,6 +85,123 @@ func TestToDataframe(t *testing.T) {
 		require.Equal(t, "baz1", frame.Fields[2].At(1))
 	})
 
+	t.Run("it flattens a map", func(t *testing.T) {
+		m := map[string]interface{}{
+			"Thing1": "foo",
+			"Thing2": int32(36),
+			"Thing3": "baz",
+		}
+
+		frame, err := framestruct.ToDataframe("results", m)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 3)
+		require.Equal(t, "foo", frame.Fields[0].At(0))
+		require.Equal(t, int32(36), frame.Fields[1].At(0))
+		require.Equal(t, "baz", frame.Fields[2].At(0))
+	})
+
+	t.Run("it flattens a slice of maps", func(t *testing.T) {
+		maps := []map[string]interface{}{
+			{
+				"Thing1": "foo",
+				"Thing2": int32(36),
+				"Thing3": "baz",
+			},
+			{
+				"Thing1": "foo1",
+				"Thing2": int32(37),
+				"Thing3": "baz1",
+			},
+		}
+
+		frame, err := framestruct.ToDataframe("results", maps)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 3)
+		require.Equal(t, 2, frame.Fields[0].Len())
+		require.Equal(t, 2, frame.Fields[1].Len())
+		require.Equal(t, 2, frame.Fields[2].Len())
+
+		require.Equal(t, "foo", frame.Fields[0].At(0))
+		require.Equal(t, "foo1", frame.Fields[0].At(1))
+
+		require.Equal(t, int32(36), frame.Fields[1].At(0))
+		require.Equal(t, int32(37), frame.Fields[1].At(1))
+
+		require.Equal(t, "baz", frame.Fields[2].At(0))
+		require.Equal(t, "baz1", frame.Fields[2].At(1))
+	})
+
+	t.Run("it flattens nested maps with dot-names", func(t *testing.T) {
+		m := map[string]interface{}{
+			"Thing1": "foo",
+			"Thing2": int32(36),
+			"Thing3": map[string]interface{}{
+				"Thing4": true,
+				"Thing5": int32(100),
+			},
+		}
+
+		frame, err := framestruct.ToDataframe("results", m)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 4)
+		require.Equal(t, "Thing1", frame.Fields[0].Name)
+		require.Equal(t, "foo", frame.Fields[0].At(0))
+
+		require.Equal(t, "Thing2", frame.Fields[1].Name)
+		require.Equal(t, int32(36), frame.Fields[1].At(0))
+
+		require.Equal(t, "Thing3.Thing4", frame.Fields[2].Name)
+		require.Equal(t, true, frame.Fields[2].At(0))
+
+		require.Equal(t, "Thing3.Thing5", frame.Fields[3].Name)
+		require.Equal(t, int32(100), frame.Fields[3].At(0))
+	})
+
+	t.Run("it flattens maps with structs", func(t *testing.T) {
+		m := map[string]interface{}{
+			"Thing1": "foo",
+			"Thing2": int32(36),
+			"Thing3": nested3{
+				Thing7: false,
+				Thing8: 100,
+			},
+		}
+
+		frame, err := framestruct.ToDataframe("results", m)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 4)
+		require.Equal(t, "Thing1", frame.Fields[0].Name)
+		require.Equal(t, "foo", frame.Fields[0].At(0))
+
+		require.Equal(t, "Thing2", frame.Fields[1].Name)
+		require.Equal(t, int32(36), frame.Fields[1].At(0))
+
+		require.Equal(t, "Thing3.Thing7", frame.Fields[2].Name)
+		require.Equal(t, false, frame.Fields[2].At(0))
+
+		require.Equal(t, "Thing3.Thing8", frame.Fields[3].Name)
+		require.Equal(t, int64(100), frame.Fields[3].At(0))
+	})
+
+	t.Run("it flattens structs with maps", func(t *testing.T) {
+		m := structWithMap{
+			map[string]interface{}{
+				"Thing1": "foo",
+			},
+		}
+
+		frame, err := framestruct.ToDataframe("results", m)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 1)
+		require.Equal(t, "Foo.Thing1", frame.Fields[0].Name)
+		require.Equal(t, "foo", frame.Fields[0].At(0))
+	})
+
 	t.Run("it propertly handles pointers", func(t *testing.T) {
 		foo := "foo"
 		strct := pointerStruct{&foo}
@@ -234,6 +351,58 @@ func TestToDataframe(t *testing.T) {
 		require.Equal(t, "unsupported type int", err.Error())
 	})
 
+	t.Run("it returns an error when any map contains an unsupported type", func(t *testing.T) {
+		m := map[string]interface{}{
+			"Thing1": "foo",
+			"Thing2": int(36),
+			"Thing3": "baz",
+			"Thing4": map[string]interface{}{
+				"Thing5": 37,
+			},
+		}
+
+		_, err := framestruct.ToDataframe("results", m)
+		require.Error(t, err)
+		require.Equal(t, "unsupported type int", err.Error())
+
+		_, err = framestruct.ToDataframe("results", []map[string]interface{}{m})
+		require.Error(t, err)
+		require.Equal(t, "unsupported type int", err.Error())
+	})
+
+	t.Run("it returns an error when any map contains a struct with an unsupported type", func(t *testing.T) {
+		m := map[string]interface{}{
+			"Thing1": "foo",
+			"Thing2": int(36),
+			"Thing3": "baz",
+			"Thing4": unsupportedType{36},
+		}
+
+		_, err := framestruct.ToDataframe("results", m)
+		require.Error(t, err)
+		require.Equal(t, "unsupported type int", err.Error())
+
+		_, err = framestruct.ToDataframe("results", []map[string]interface{}{m})
+		require.Error(t, err)
+		require.Equal(t, "unsupported type int", err.Error())
+	})
+
+	t.Run("it returns an error when any struct contains a cap with an unsupported type", func(t *testing.T) {
+		m := structWithMap{
+			map[string]interface{}{
+				"Thing2": 36,
+			},
+		}
+
+		_, err := framestruct.ToDataframe("results", m)
+		require.Error(t, err)
+		require.Equal(t, "unsupported type int", err.Error())
+
+		_, err = framestruct.ToDataframe("results", []structWithMap{m})
+		require.Error(t, err)
+		require.Equal(t, "unsupported type int", err.Error())
+	})
+
 	t.Run("it returns an error when a nested struct contains an unsupported type", func(t *testing.T) {
 		strct := supportedWithUnsupported{
 			"foo",
@@ -255,7 +424,7 @@ func TestToDataframe(t *testing.T) {
 		require.Equal(t, "unsupported type int", err.Error())
 	})
 
-	t.Run("it returns an error when non struct types are passed in", func(t *testing.T) {
+	t.Run("it returns an error when invalid types are passed in", func(t *testing.T) {
 		_, err := framestruct.ToDataframe("???", []string{"1", "2"})
 		require.Error(t, err)
 
@@ -269,7 +438,6 @@ func TestToDataframe(t *testing.T) {
 
 	// This test fails when run with -race when it's not threadsafe
 	t.Run("it is threadsafe", func(t *testing.T) {
-
 		start := make(chan struct{})
 		end := make(chan struct{})
 
@@ -360,4 +528,8 @@ type unsupportedType struct {
 
 type pointerStruct struct {
 	Foo *string
+}
+
+type structWithMap struct {
+	Foo map[string]interface{}
 }

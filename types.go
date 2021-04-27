@@ -2,6 +2,7 @@ package framestruct
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -62,4 +63,8 @@ func sliceFor(value interface{}) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("unsupported type %T", v)
 	}
+}
+
+func supportedType(v reflect.Value) bool {
+	return v.Kind() == reflect.Slice || v.Kind() == reflect.Struct || v.Kind() == reflect.Map
 }

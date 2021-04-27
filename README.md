@@ -1,7 +1,22 @@
 # framestruct
 
-framestruct is a simple library for flattening structs and slices of structs
-into grafana data.Frame pointers.
+framestruct is a simple library for flattening structs, slices, and maps
+into pointers to grafana data.Frames.
+
+## Supported Types
+
+framestruct supports conversions of the following types:
+
+- structs
+- `map[string]interface{}`
+- slices of structs of `map[string]interface{}`
+
+Structs may contain map[string]interface{} and maps may contain structs.
+
+### A note on maps
+
+To preserve ordering across runs with maps, framestruct storts fieldnames.
+If you want to control the order use a struct or specialy designed map keys.
 
 ## Usage
 
