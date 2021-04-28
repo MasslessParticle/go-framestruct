@@ -9,7 +9,7 @@ framestruct supports conversions of the following types:
 
 - structs
 - `map[string]interface{}`
-- slices of structs of `map[string]interface{}`
+- slices of structs or `map[string]interface{}`
 
 Structs may contain map[string]interface{} and maps may contain structs.
 
