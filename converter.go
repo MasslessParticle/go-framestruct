@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
@@ -31,7 +32,7 @@ func ToDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 
 func (c *converter) toDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 	v := c.ensureValue(reflect.ValueOf(toConvert))
-	if !supportedType(v) {
+	if !supportedToplevelType(v) {
 		return nil, errors.New("unsupported type: can only convert structs, slices, and maps")
 	}
 
@@ -56,13 +57,21 @@ func (c *converter) handleValue(field reflect.Value, tags, fieldName string) err
 			return err
 		}
 	case reflect.Struct:
-		if err := c.makeFields(field, fieldName); err != nil {
-			return err
+		_, ok := field.Interface().(time.Time)
+		if ok {
+			if err := c.upsertField(field, fieldName); err != nil {
+				return err
+			}
+		} else {
+			if err := c.makeFields(field, fieldName); err != nil {
+				return err
+			}
 		}
 	case reflect.Map:
 		if err := c.convertMap(field.Interface(), tags, fieldName); err != nil {
 			return err
 		}
+
 	default:
 		if err := c.upsertField(field, fieldName); err != nil {
 			return err

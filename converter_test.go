@@ -23,6 +23,30 @@ func TestStructs(t *testing.T) {
 		require.Equal(t, "baz", frame.Fields[2].At(0))
 	})
 
+	t.Run("it treats times as a value", func(t *testing.T) {
+		tme := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
+		strct := timeStruct{tme}
+
+		frame, err := framestruct.ToDataframe("Results", strct)
+		require.Nil(t, err)
+
+		require.Equal(t, "Results", frame.Name)
+		require.Len(t, frame.Fields, 1)
+		require.Equal(t, tme, frame.Fields[0].At(0))
+	})
+
+	t.Run("it treats time pointers as a value", func(t *testing.T) {
+		tme := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
+		strct := timePointerStruct{&tme}
+
+		frame, err := framestruct.ToDataframe("Results", strct)
+		require.Nil(t, err)
+
+		require.Equal(t, "Results", frame.Name)
+		require.Len(t, frame.Fields, 1)
+		require.Equal(t, &tme, frame.Fields[0].At(0))
+	})
+
 	t.Run("it flattens a pointer to a struct", func(t *testing.T) {
 		strct := simpleStruct{"foo", 36, "baz"}
 
@@ -483,6 +507,9 @@ func TestToDataframe(t *testing.T) {
 
 		_, err = framestruct.ToDataframe("???", "can't do a string either")
 		require.Error(t, err)
+
+		_, err = framestruct.ToDataframe("???", time.Now())
+		require.Error(t, err)
 	})
 
 	// This test fails when run with -race when it's not threadsafe
@@ -595,4 +622,12 @@ type allStructTags struct {
 type barBaz struct {
 	Bar string                 `frame:"zzz,omitparent,col0"`
 	Baz map[string]interface{} `frame:",omitparent"`
+}
+
+type timeStruct struct {
+	Time time.Time `frame:"time"`
+}
+
+type timePointerStruct struct {
+	Time *time.Time `frame:"time"`
 }

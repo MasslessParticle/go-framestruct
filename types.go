@@ -65,6 +65,13 @@ func sliceFor(value interface{}) (interface{}, error) {
 	}
 }
 
-func supportedType(v reflect.Value) bool {
+func supportedToplevelType(v reflect.Value) bool {
+	if v.Kind() == reflect.Struct {
+		_, ok := v.Interface().(time.Time)
+		if ok {
+			return false //times are structs, but not toplevel ones
+		}
+	}
+
 	return v.Kind() == reflect.Slice || v.Kind() == reflect.Struct || v.Kind() == reflect.Map
 }
