@@ -423,10 +423,10 @@ func TestStructTags(t *testing.T) {
 		require.Equal(t, "Thing6", frame.Fields[3].Name)
 		require.Equal(t, int64(100), frame.Fields[3].At(0))
 
-		require.Equal(t, "Thing7", frame.Fields[4].Name)
+		require.Equal(t, "omitparent.Thing7", frame.Fields[4].Name)
 		require.Equal(t, false, frame.Fields[4].At(0))
 
-		require.Equal(t, "Thing8", frame.Fields[5].Name)
+		require.Equal(t, "omitparent.Thing8", frame.Fields[5].Name)
 		require.Equal(t, int64(200), frame.Fields[5].At(0))
 	})
 }
