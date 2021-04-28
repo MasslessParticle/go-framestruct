@@ -35,7 +35,7 @@ func (c *converter) toDataframe(name string, toConvert interface{}) (*data.Frame
 		return nil, errors.New("unsupported type: can only convert structs, slices, and maps")
 	}
 
-	if err := c.handleValue(v, ""); err != nil {
+	if err := c.handleValue(v, "", ""); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +49,7 @@ func (c *converter) ensureValue(v reflect.Value) reflect.Value {
 	return v
 }
 
-func (c *converter) handleValue(field reflect.Value, fieldName string) error {
+func (c *converter) handleValue(field reflect.Value, tags, fieldName string) error {
 	switch field.Kind() {
 	case reflect.Slice:
 		if err := c.convertSlice(field); err != nil {
@@ -60,7 +60,7 @@ func (c *converter) handleValue(field reflect.Value, fieldName string) error {
 			return err
 		}
 	case reflect.Map:
-		if err := c.convertMap(field.Interface(), fieldName); err != nil {
+		if err := c.convertMap(field.Interface(), tags, fieldName); err != nil {
 			return err
 		}
 	default:
@@ -76,7 +76,7 @@ func (c *converter) convertSlice(s reflect.Value) error {
 		v := s.Index(i)
 		switch v.Kind() {
 		case reflect.Map:
-			if err := c.convertMap(v.Interface(), ""); err != nil {
+			if err := c.convertMap(v.Interface(), "", ""); err != nil {
 				return err
 			}
 		default:
@@ -107,7 +107,7 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 		}
 
 		fieldName := c.fieldName(structField.Name, tags, prefix)
-		if err := c.handleValue(field, fieldName); err != nil {
+		if err := c.handleValue(field, tags, fieldName); err != nil {
 			return err
 		}
 
@@ -119,7 +119,7 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 	return nil
 }
 
-func (c *converter) convertMap(toConvert interface{}, prefix string) error {
+func (c *converter) convertMap(toConvert interface{}, tags, prefix string) error {
 	c.anyMap = true
 	m, ok := toConvert.(map[string]interface{})
 	if !ok {
@@ -127,9 +127,9 @@ func (c *converter) convertMap(toConvert interface{}, prefix string) error {
 	}
 
 	for name, value := range m {
-		fieldName := c.fieldName(name, "", prefix)
+		fieldName := c.fieldName(name, tags, prefix)
 		v := c.ensureValue(reflect.ValueOf(value))
-		if err := c.handleValue(v, fieldName); err != nil {
+		if err := c.handleValue(v, "", fieldName); err != nil {
 			return err
 		}
 	}
@@ -192,7 +192,7 @@ func (c *converter) getFieldnames() []string {
 func (c *converter) fieldName(fieldName, tags, prefix string) string {
 	c.parseTags(tags)
 	if c.tags[1] == "omitparent" {
-		return ""
+		prefix = ""
 	}
 
 	if c.tags[0] != "" {

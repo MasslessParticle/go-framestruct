@@ -93,11 +93,48 @@ Thing6
 
 - Use the `frame` struct tag to configure conversion behavior. a custom name.
 - Use `-` to exclude a field from the output.
-- No tags are supported for fields coming from map keys.
 - Other flags must be used in the following order
   1. `fieldname`: The first tag present will override the Dataframe column name. By default, framestruct uses the name of the struct field.
   1. `omitparent`: When present, will tell framestruct to use the name of `child` rather than `parent.child` as the Dataframe column name.
   1. `col0`: When present, will make this the 0th column of the Dataframe. Only the first instance of `col0` is respected
+
+### A Note on Maps in struct fields
+
+Maps are treated like a child of their struct field. Maps inherit their parent fields tags. The only supported tag on a map field is `,omitparent`
+all other tags result in undefined behavior
+
+e.g.:
+
+```go
+type allStructTags struct {
+	Foo barBaz
+}
+
+type barBaz struct {
+	Bar string                 `frame:"zzz,omitparent,col0"`
+	Baz map[string]interface{} `frame:",omitparent"`
+}
+
+allStructTags{
+	Foo: barBaz{
+		Bar: "should be first",
+		Baz: map[string]interface{}{
+			"aaa": "foo",
+			"bbb": "foo",
+			"ccc": "foo",
+		},
+	},
+}
+```
+
+results in the following fields in the following order:
+
+```
+zzz
+aaa
+bbb
+ccc
+```
 
 ## Running Tests
 

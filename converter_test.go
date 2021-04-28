@@ -77,10 +77,10 @@ func TestStructs(t *testing.T) {
 	t.Run("it flattens nested structs with dot-names", func(t *testing.T) {
 		strct := []nested1{
 			{"foo", 36, "baz",
-				nested2{true, 100},
+				nested3{true, 100},
 			},
 			{"foo1", 37, "baz1",
-				nested2{false, 101},
+				nested3{false, 101},
 			},
 		}
 
@@ -106,11 +106,11 @@ func TestStructs(t *testing.T) {
 		require.Equal(t, "baz", frame.Fields[2].At(0))
 		require.Equal(t, "baz1", frame.Fields[2].At(1))
 
-		require.Equal(t, "Thing4.Thing5", frame.Fields[3].Name)
+		require.Equal(t, "Thing4.Thing7", frame.Fields[3].Name)
 		require.Equal(t, true, frame.Fields[3].At(0))
 		require.Equal(t, false, frame.Fields[3].At(1))
 
-		require.Equal(t, "Thing4.Thing6", frame.Fields[4].Name)
+		require.Equal(t, "Thing4.Thing8", frame.Fields[4].Name)
 		require.Equal(t, int64(100), frame.Fields[4].At(0))
 		require.Equal(t, int64(101), frame.Fields[4].At(1))
 	})
@@ -370,7 +370,7 @@ func TestStructTags(t *testing.T) {
 		strct := structWithTags{
 			"foo",
 			"bar",
-			nested2{
+			nested3{
 				true,
 				100,
 			},
@@ -386,10 +386,10 @@ func TestStructTags(t *testing.T) {
 		require.Equal(t, "second-thing", frame.Fields[1].Name)
 		require.Equal(t, "bar", frame.Fields[1].At(0))
 
-		require.Equal(t, "third-thing.Thing5", frame.Fields[2].Name)
+		require.Equal(t, "third-thing.Thing7", frame.Fields[2].Name)
 		require.Equal(t, true, frame.Fields[2].At(0))
 
-		require.Equal(t, "third-thing.Thing6", frame.Fields[3].Name)
+		require.Equal(t, "third-thing.Thing8", frame.Fields[3].Name)
 		require.Equal(t, int64(100), frame.Fields[3].At(0))
 	})
 
@@ -449,6 +449,28 @@ func TestStructTags(t *testing.T) {
 		require.Equal(t, "bbb", frame.Fields[2].Name)
 		require.Equal(t, "ccc", frame.Fields[3].Name)
 	})
+
+	t.Run("it should be able to use all the struct tags", func(t *testing.T) {
+		strct := allStructTags{
+			Foo: barBaz{
+				Bar: "should be first",
+				Baz: map[string]interface{}{
+					"aaa": "foo",
+					"bbb": "foo",
+					"ccc": "foo",
+				},
+			},
+		}
+
+		frame, err := framestruct.ToDataframe("results", strct)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 4)
+		require.Equal(t, "zzz", frame.Fields[0].Name)
+		require.Equal(t, "aaa", frame.Fields[1].Name)
+		require.Equal(t, "bbb", frame.Fields[2].Name)
+		require.Equal(t, "ccc", frame.Fields[3].Name)
+	})
 }
 func TestToDataframe(t *testing.T) {
 	t.Run("it returns an error when invalid types are passed in", func(t *testing.T) {
@@ -481,7 +503,7 @@ func convertStruct(start, end chan struct{}) {
 	strct := structWithTags{
 		"foo",
 		"bar",
-		nested2{
+		nested3{
 			true,
 			100,
 		},
@@ -512,12 +534,12 @@ type nested1 struct {
 	Thing1 string
 	Thing2 int32
 	Thing3 string
-	Thing4 nested2
+	Thing4 nested3
 }
 
 type nested2 struct {
-	Thing5 bool
-	Thing6 int64
+	Thing5 bool  `frame:",omitparent"`
+	Thing6 int64 `frame:",omitparent"`
 }
 
 type nested3 struct {
@@ -528,13 +550,13 @@ type nested3 struct {
 type structWithTags struct {
 	Thing1 string  `frame:"first-thing"`
 	Thing2 string  `frame:"second-thing"`
-	Thing3 nested2 `frame:"third-thing"`
+	Thing3 nested3 `frame:"third-thing"`
 }
 
 type omitParentStruct struct {
-	Thing1 string  `frame:"first-thing"`
-	Thing2 string  `frame:"second-thing"`
-	Thing3 nested2 `frame:",omitparent"`
+	Thing1 string `frame:"first-thing"`
+	Thing2 string `frame:"second-thing"`
+	Thing3 nested2
 	Thing4 nested3 `frame:"omitparent"`
 }
 
@@ -564,4 +586,13 @@ type structWithMap struct {
 type structWithCol0 struct {
 	Zed string                 `frame:"zzz,,col0"`
 	Foo map[string]interface{} `frame:",omitparent"`
+}
+
+type allStructTags struct {
+	Foo barBaz
+}
+
+type barBaz struct {
+	Bar string                 `frame:"zzz,omitparent,col0"`
+	Baz map[string]interface{} `frame:",omitparent"`
 }
