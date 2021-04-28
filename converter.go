@@ -16,13 +16,14 @@ type converter struct {
 	fields     map[string]*data.Field
 	tags       []string
 	anyMap     bool
+	col0       string
 }
 
 // ToDataframe flattens an arbitrary struct or slice of structs into a *data.Frame
 func ToDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 	cr := &converter{
 		fields: make(map[string]*data.Field),
-		tags:   make([]string, 2),
+		tags:   make([]string, 3),
 	}
 
 	return cr.toDataframe(name, toConvert)
@@ -30,7 +31,6 @@ func ToDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 
 func (c *converter) toDataframe(name string, toConvert interface{}) (*data.Frame, error) {
 	v := c.ensureValue(reflect.ValueOf(toConvert))
-
 	if !supportedType(v) {
 		return nil, errors.New("unsupported type: can only convert structs, slices, and maps")
 	}
@@ -39,19 +39,35 @@ func (c *converter) toDataframe(name string, toConvert interface{}) (*data.Frame
 		return nil, err
 	}
 
+	return c.createFrame(name), nil
+}
+
+func (c *converter) createFrame(name string) *data.Frame {
+	frame := data.NewFrame(name)
+	for _, f := range c.getFieldnames() {
+		frame.Fields = append(frame.Fields, c.fields[f])
+	}
+	return frame
+}
+
+func (c *converter) getFieldnames() []string {
 	if c.anyMap {
 		// Ensure stable order of fields across
 		// runs, because maps
 		sort.Strings(c.fieldNames)
 	}
 
-	//add to frame, iterate to preserve order
-	frame := data.NewFrame(name)
+	fieldnames := []string{}
+	if c.col0 != "" {
+		fieldnames = append(fieldnames, c.col0)
+	}
 	for _, f := range c.fieldNames {
-		frame.Fields = append(frame.Fields, c.fields[f])
+		if f != c.col0 {
+			fieldnames = append(fieldnames, f)
+		}
 	}
 
-	return frame, nil
+	return fieldnames
 }
 
 func (c *converter) convertMap(toConvert interface{}, prefix string) error {
@@ -119,6 +135,11 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 		fieldName := c.fieldName(structField.Name, tags, prefix)
 		if err := c.handleValue(field, fieldName); err != nil {
 			return err
+		}
+
+		c.parseTags(tags, ",")
+		if c.tags[2] != "" {
+			c.col0 = fieldName
 		}
 	}
 	return nil
@@ -190,6 +211,7 @@ func (c *converter) parseTags(s, sep string) {
 	// of strings.Split
 	c.tags[0] = ""
 	c.tags[1] = ""
+	c.tags[2] = ""
 
 	i := 0
 	for i < 2 {
@@ -201,5 +223,8 @@ func (c *converter) parseTags(s, sep string) {
 		s = s[m+len(sep):]
 		i++
 	}
-	c.tags[i] = s
+
+	if i < len(c.tags) {
+		c.tags[i] = s
+	}
 }

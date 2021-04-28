@@ -91,9 +91,13 @@ Thing6
 
 ## Struct Tags
 
-- Use the `frame` struct tag to define a custom name. By default, framestruct will use the name of the struct field as the Dataframe column name.
+- Use the `frame` struct tag to configure conversion behavior. a custom name.
 - Use `-` to exclude a field from the output.
-- Use `omitparent` to use the name of `child` rather than `parent.child` as the name of a column coming from a nested struct.
+- No tags are supported for fields coming from map keys.
+- Other flags must be used in the following order
+  1. `fieldname`: The first tag present will override the Dataframe column name. By default, framestruct uses the name of the struct field.
+  1. `omitparent`: When present, will tell framestruct to use the name of `child` rather than `parent.child` as the Dataframe column name.
+  1. `col0`: When present, will make this the 0th column of the Dataframe. Only the first instance of `col0` is respected
 
 ## Running Tests
 

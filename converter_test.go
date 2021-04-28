@@ -429,6 +429,26 @@ func TestStructTags(t *testing.T) {
 		require.Equal(t, "omitparent.Thing8", frame.Fields[5].Name)
 		require.Equal(t, int64(200), frame.Fields[5].At(0))
 	})
+
+	t.Run("sets the column with col0 to be the 0th column", func(t *testing.T) {
+		m := structWithCol0{
+			Zed: "this would be last without tag",
+			Foo: map[string]interface{}{
+				"aaa": "foo",
+				"bbb": "foo",
+				"ccc": "foo",
+			},
+		}
+
+		frame, err := framestruct.ToDataframe("results", m)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 4)
+		require.Equal(t, "zzz", frame.Fields[0].Name)
+		require.Equal(t, "aaa", frame.Fields[1].Name)
+		require.Equal(t, "bbb", frame.Fields[2].Name)
+		require.Equal(t, "ccc", frame.Fields[3].Name)
+	})
 }
 func TestToDataframe(t *testing.T) {
 	t.Run("it returns an error when invalid types are passed in", func(t *testing.T) {
@@ -539,4 +559,9 @@ type pointerStruct struct {
 
 type structWithMap struct {
 	Foo map[string]interface{}
+}
+
+type structWithCol0 struct {
+	Zed string                 `frame:"zzz,,col0"`
+	Foo map[string]interface{} `frame:",omitparent"`
 }
