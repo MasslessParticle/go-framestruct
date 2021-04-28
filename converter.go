@@ -42,6 +42,125 @@ func (c *converter) toDataframe(name string, toConvert interface{}) (*data.Frame
 	return c.createFrame(name), nil
 }
 
+func (c *converter) ensureValue(v reflect.Value) reflect.Value {
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	return v
+}
+
+func (c *converter) handleValue(field reflect.Value, fieldName string) error {
+	switch field.Kind() {
+	case reflect.Slice:
+		if err := c.convertSlice(field); err != nil {
+			return err
+		}
+	case reflect.Struct:
+		if err := c.makeFields(field, fieldName); err != nil {
+			return err
+		}
+	case reflect.Map:
+		if err := c.convertMap(field.Interface(), fieldName); err != nil {
+			return err
+		}
+	default:
+		if err := c.upsertField(field, fieldName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *converter) convertSlice(s reflect.Value) error {
+	for i := 0; i < s.Len(); i++ {
+		v := s.Index(i)
+		switch v.Kind() {
+		case reflect.Map:
+			if err := c.convertMap(v.Interface(), ""); err != nil {
+				return err
+			}
+		default:
+			if err := c.convertStruct(v); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *converter) makeFields(v reflect.Value, prefix string) error {
+	if v.Kind() != reflect.Struct {
+		return errors.New("unsupported type: cannot convert types without fields")
+	}
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if !field.CanInterface() {
+			continue
+		}
+
+		structField := v.Type().Field(i)
+		tags := structField.Tag.Get(frameTag)
+
+		if tags == "-" {
+			continue
+		}
+
+		fieldName := c.fieldName(structField.Name, tags, prefix)
+		if err := c.handleValue(field, fieldName); err != nil {
+			return err
+		}
+
+		c.parseTags(tags)
+		if c.tags[2] != "" {
+			c.col0 = fieldName
+		}
+	}
+	return nil
+}
+
+func (c *converter) convertMap(toConvert interface{}, prefix string) error {
+	c.anyMap = true
+	m, ok := toConvert.(map[string]interface{})
+	if !ok {
+		return errors.New("map must be map[string]interface{}")
+	}
+
+	for name, value := range m {
+		fieldName := c.fieldName(name, "", prefix)
+		v := c.ensureValue(reflect.ValueOf(value))
+		if err := c.handleValue(v, fieldName); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *converter) upsertField(v reflect.Value, fieldName string) error {
+	if _, exists := c.fields[fieldName]; !exists {
+		//keep track of unique fields in the order they appear
+		c.fieldNames = append(c.fieldNames, fieldName)
+		v, err := sliceFor(v.Interface())
+		if err != nil {
+			return err
+		}
+
+		c.fields[fieldName] = data.NewField(fieldName, nil, v)
+	}
+	c.fields[fieldName].Append(v.Interface())
+	return nil
+}
+
+func (c *converter) convertStruct(f reflect.Value) error {
+	v := c.ensureValue(f)
+	if err := c.makeFields(v, ""); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *converter) createFrame(name string) *data.Frame {
 	frame := data.NewFrame(name)
 	for _, f := range c.getFieldnames() {
@@ -70,120 +189,8 @@ func (c *converter) getFieldnames() []string {
 	return fieldnames
 }
 
-func (c *converter) convertMap(toConvert interface{}, prefix string) error {
-	c.anyMap = true
-	m, ok := toConvert.(map[string]interface{})
-	if !ok {
-		return errors.New("map must be map[string]interface{}")
-	}
-
-	for name, value := range m {
-		fieldName := c.fieldName(name, "", prefix)
-		v := c.ensureValue(reflect.ValueOf(value))
-		if err := c.handleValue(v, fieldName); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c *converter) convertSlice(s reflect.Value) error {
-	for i := 0; i < s.Len(); i++ {
-		v := s.Index(i)
-		switch v.Kind() {
-		case reflect.Map:
-			if err := c.convertMap(v.Interface(), ""); err != nil {
-				return err
-			}
-		default:
-			if err := c.convertStruct(v); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (c *converter) convertStruct(f reflect.Value) error {
-	v := c.ensureValue(f)
-	if err := c.makeFields(v, ""); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *converter) makeFields(v reflect.Value, prefix string) error {
-	if v.Kind() != reflect.Struct {
-		return errors.New("unsupported type: cannot convert types without fields")
-	}
-
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		if !field.CanInterface() {
-			continue
-		}
-
-		structField := v.Type().Field(i)
-		tags := structField.Tag.Get(frameTag)
-
-		if tags == "-" {
-			continue
-		}
-
-		fieldName := c.fieldName(structField.Name, tags, prefix)
-		if err := c.handleValue(field, fieldName); err != nil {
-			return err
-		}
-
-		c.parseTags(tags, ",")
-		if c.tags[2] != "" {
-			c.col0 = fieldName
-		}
-	}
-	return nil
-}
-
-func (c *converter) handleValue(field reflect.Value, fieldName string) error {
-	switch field.Kind() {
-	case reflect.Slice:
-		if err := c.convertSlice(field); err != nil {
-			return err
-		}
-	case reflect.Struct:
-		if err := c.makeFields(field, fieldName); err != nil {
-			return err
-		}
-	case reflect.Map:
-		if err := c.convertMap(field.Interface(), fieldName); err != nil {
-			return err
-		}
-	default:
-		if err := c.upsertField(field, fieldName); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *converter) upsertField(v reflect.Value, fieldName string) error {
-	if _, exists := c.fields[fieldName]; !exists {
-		//keep track of unique fields in the order they appear
-		c.fieldNames = append(c.fieldNames, fieldName)
-		v, err := sliceFor(v.Interface())
-		if err != nil {
-			return err
-		}
-
-		c.fields[fieldName] = data.NewField(fieldName, nil, v)
-	}
-	c.fields[fieldName].Append(v.Interface())
-	return nil
-}
-
 func (c *converter) fieldName(fieldName, tags, prefix string) string {
-	c.parseTags(tags, ",")
+	c.parseTags(tags)
 	if c.tags[1] == "omitparent" {
 		return ""
 	}
@@ -199,19 +206,14 @@ func (c *converter) fieldName(fieldName, tags, prefix string) string {
 	return prefix + "." + fieldName
 }
 
-func (c *converter) ensureValue(v reflect.Value) reflect.Value {
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	return v
-}
-
-func (c *converter) parseTags(s, sep string) {
+func (c *converter) parseTags(s string) {
 	// if we do it this way, we avoid all the allocs
 	// of strings.Split
 	c.tags[0] = ""
 	c.tags[1] = ""
 	c.tags[2] = ""
+
+	sep := ","
 
 	i := 0
 	for i < 2 {
