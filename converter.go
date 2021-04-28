@@ -53,31 +53,23 @@ func (c *converter) ensureValue(v reflect.Value) reflect.Value {
 func (c *converter) handleValue(field reflect.Value, tags, fieldName string) error {
 	switch field.Kind() {
 	case reflect.Slice:
-		if err := c.convertSlice(field); err != nil {
-			return err
-		}
+		return c.convertSlice(field)
 	case reflect.Struct:
-		_, ok := field.Interface().(time.Time)
-		if ok {
-			if err := c.upsertField(field, fieldName); err != nil {
-				return err
-			}
-		} else {
-			if err := c.makeFields(field, fieldName); err != nil {
-				return err
-			}
-		}
+		return c.convertStruct(field, fieldName)
 	case reflect.Map:
-		if err := c.convertMap(field.Interface(), tags, fieldName); err != nil {
-			return err
-		}
-
+		return c.convertMap(field.Interface(), tags, fieldName)
 	default:
-		if err := c.upsertField(field, fieldName); err != nil {
-			return err
-		}
+		return c.upsertField(field, fieldName)
 	}
-	return nil
+}
+
+func (c *converter) convertStruct(field reflect.Value, fieldName string) error {
+	_, ok := field.Interface().(time.Time)
+	if ok {
+		return c.upsertField(field, fieldName)
+	}
+
+	return c.makeFields(field, fieldName)
 }
 
 func (c *converter) convertSlice(s reflect.Value) error {
@@ -89,7 +81,7 @@ func (c *converter) convertSlice(s reflect.Value) error {
 				return err
 			}
 		default:
-			if err := c.convertStruct(v); err != nil {
+			if err := c.convertStruct(v, ""); err != nil {
 				return err
 			}
 		}
@@ -158,15 +150,6 @@ func (c *converter) upsertField(v reflect.Value, fieldName string) error {
 		c.fields[fieldName] = data.NewField(fieldName, nil, v)
 	}
 	c.fields[fieldName].Append(v.Interface())
-	return nil
-}
-
-func (c *converter) convertStruct(f reflect.Value) error {
-	v := c.ensureValue(f)
-	if err := c.makeFields(v, ""); err != nil {
-		return err
-	}
-
 	return nil
 }
 

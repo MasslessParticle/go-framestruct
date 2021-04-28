@@ -510,6 +510,9 @@ func TestToDataframe(t *testing.T) {
 
 		_, err = framestruct.ToDataframe("???", time.Now())
 		require.Error(t, err)
+
+		_, err = framestruct.ToDataframe("???", []time.Time{time.Now()})
+		require.Error(t, err)
 	})
 
 	// This test fails when run with -race when it's not threadsafe
