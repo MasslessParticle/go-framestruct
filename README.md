@@ -11,7 +11,7 @@ framestruct supports conversions of the following types:
 - `map[string]interface{}`
 - slices of structs or `map[string]interface{}`
 
-Structs may contain map[string]interface{} and maps may contain structs.
+Structs may contain `map[string]interface{}` and maps may contain structs.
 
 ### A note on maps
 
@@ -35,7 +35,7 @@ type structWithTags struct {
 	Thing1 string  `frame:"first-thing"`
 	Thing2 string  `frame:"-"`
 	Thing3 nested2 `frame:"third-thing"`
-	Thing4 nested2 `frame:"omitparent"`
+	Thing4 nested2 `frame:",omitparent"`
 }
 
 type nested2 struct {
