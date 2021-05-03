@@ -73,7 +73,7 @@ func (c *converter) ensureValue(v reflect.Value) reflect.Value {
 func (c *converter) handleValue(field reflect.Value, tags, fieldName string) error {
 	switch field.Kind() {
 	case reflect.Slice:
-		return c.convertSlice(field)
+		return c.convertSlice(field, fieldName)
 	case reflect.Struct:
 		return c.convertStruct(field, fieldName)
 	case reflect.Map:
@@ -92,16 +92,16 @@ func (c *converter) convertStruct(field reflect.Value, fieldName string) error {
 	return c.convertStructFields(field, fieldName)
 }
 
-func (c *converter) convertSlice(s reflect.Value) error {
+func (c *converter) convertSlice(s reflect.Value, prefix string) error {
 	for i := 0; i < s.Len(); i++ {
 		v := s.Index(i)
 		switch v.Kind() {
 		case reflect.Map:
-			if err := c.convertMap(v.Interface(), "", ""); err != nil {
+			if err := c.convertMap(v.Interface(), "", prefix); err != nil {
 				return err
 			}
 		default:
-			if err := c.convertStruct(v, ""); err != nil {
+			if err := c.convertStruct(v, prefix); err != nil {
 				return err
 			}
 		}
@@ -164,7 +164,7 @@ func (c *converter) convertMap(toConvert interface{}, tags, prefix string) error
 
 func (c *converter) upsertField(v reflect.Value, fieldName string) error {
 	if _, exists := c.fields[fieldName]; !exists {
-		//keep track of unique fields in the order they appear
+		// keep track of unique fields in the order they appear
 		c.fieldNames = append(c.fieldNames, fieldName)
 		v, err := sliceFor(v.Interface())
 		if err != nil {

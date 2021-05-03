@@ -77,7 +77,7 @@ func TestStructs(t *testing.T) {
 		require.Equal(t, "foo", frame.Fields[0].At(0))
 	})
 
-	t.Run("it propertly handles pointers", func(t *testing.T) {
+	t.Run("it properly handles pointers", func(t *testing.T) {
 		foo := "foo"
 		strct := pointerStruct{&foo}
 
@@ -347,6 +347,33 @@ func TestMaps(t *testing.T) {
 		require.Equal(t, int64(100), frame.Fields[3].At(0))
 	})
 
+	t.Run("it flattens maps with slices of structs", func(t *testing.T) {
+		m := map[string]interface{}{
+			"Thing1": "foo",
+			"Thing2": int32(36),
+			"Thing3": []nested3{{
+				Thing7: false,
+				Thing8: 100,
+			}},
+		}
+
+		frame, err := framestruct.ToDataFrame("results", m)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 4)
+		require.Equal(t, "Thing1", frame.Fields[0].Name)
+		require.Equal(t, "foo", frame.Fields[0].At(0))
+
+		require.Equal(t, "Thing2", frame.Fields[1].Name)
+		require.Equal(t, int32(36), frame.Fields[1].At(0))
+
+		require.Equal(t, "Thing3.Thing7", frame.Fields[2].Name)
+		require.Equal(t, false, frame.Fields[2].At(0))
+
+		require.Equal(t, "Thing3.Thing8", frame.Fields[3].Name)
+		require.Equal(t, int64(100), frame.Fields[3].At(0))
+	})
+
 	t.Run("it returns an error when any map contains an unsupported type", func(t *testing.T) {
 		m := map[string]interface{}{
 			"Thing1": "foo",
@@ -535,6 +562,33 @@ func TestStructTags(t *testing.T) {
 		require.Equal(t, "bbb", frame.Fields[2].Name)
 		require.Equal(t, "ccc", frame.Fields[3].Name)
 	})
+
+	t.Run("it omits parents with slices of structs", func(t *testing.T) {
+		m := map[string]interface{}{
+			"Thing1": "foo",
+			"Thing2": int32(36),
+			"Thing3": []nested2{{
+				Thing5: false,
+				Thing6: 100,
+			}},
+		}
+
+		frame, err := framestruct.ToDataFrame("results", m)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 4)
+		require.Equal(t, "Thing1", frame.Fields[0].Name)
+		require.Equal(t, "foo", frame.Fields[0].At(0))
+
+		require.Equal(t, "Thing2", frame.Fields[1].Name)
+		require.Equal(t, int32(36), frame.Fields[1].At(0))
+
+		require.Equal(t, "Thing5", frame.Fields[2].Name)
+		require.Equal(t, false, frame.Fields[2].At(0))
+
+		require.Equal(t, "Thing6", frame.Fields[3].Name)
+		require.Equal(t, int64(100), frame.Fields[3].At(0))
+	})
 }
 func TestToDataframe(t *testing.T) {
 	t.Run("it returns an error when invalid types are passed in", func(t *testing.T) {
@@ -577,7 +631,7 @@ func TestToDataFrames(t *testing.T) {
 
 		require.True(t, strct.called)
 		require.Len(t, frames, 1)
-		require.Equal(t, "New Frame", frames[0].Name) //Prefer the defined name
+		require.Equal(t, "New Frame", frames[0].Name) // Prefer the defined name
 	})
 
 	t.Run("it wraps the converted data frame in the Frames type", func(t *testing.T) {
@@ -622,7 +676,10 @@ func convertStruct(start, end chan struct{}) {
 		case <-end:
 			return
 		default:
-			framestruct.ToDataFrame("frame", strct)
+			_, err := framestruct.ToDataFrame("frame", strct)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }
