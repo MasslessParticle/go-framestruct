@@ -69,7 +69,7 @@ func (c *converter) convertStruct(field reflect.Value, fieldName string) error {
 		return c.upsertField(field, fieldName)
 	}
 
-	return c.makeFields(field, fieldName)
+	return c.convertStructFields(field, fieldName)
 }
 
 func (c *converter) convertSlice(s reflect.Value) error {
@@ -89,14 +89,10 @@ func (c *converter) convertSlice(s reflect.Value) error {
 	return nil
 }
 
-func (c *converter) makeFields(v reflect.Value, prefix string) error {
-	if v.Kind() != reflect.Struct {
-		return errors.New("unsupported type: cannot convert types without fields")
-	}
-
+func (c *converter) convertStructFields(v reflect.Value, prefix string) error {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
-		if !field.CanInterface() {
+		if !exported(field) {
 			continue
 		}
 
@@ -118,6 +114,10 @@ func (c *converter) makeFields(v reflect.Value, prefix string) error {
 		}
 	}
 	return nil
+}
+
+func exported(v reflect.Value) bool {
+	return v.CanInterface()
 }
 
 func (c *converter) convertMap(toConvert interface{}, tags, prefix string) error {
