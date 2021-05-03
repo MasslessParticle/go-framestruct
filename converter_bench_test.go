@@ -1,9 +1,10 @@
 package framestruct_test
 
 import (
-	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"testing"
 	"time"
+
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 
 	"github.com/masslessparticle/go-framestruct"
 )
@@ -16,7 +17,7 @@ var benchmarkResult *data.Frame
 func benchMarshal(b *testing.B, v interface{}) {
 	b.Run("marshal", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			benchmarkResult, _ = framestruct.ToDataframe("frame", v)
+			benchmarkResult, _ = framestruct.ToDataFrame("frame", v)
 		}
 	})
 }

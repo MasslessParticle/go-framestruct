@@ -20,8 +20,8 @@ type converter struct {
 	col0       string
 }
 
-// ToDataframe flattens an arbitrary struct or slice of structs into a *data.Frame
-func ToDataframe(name string, toConvert interface{}) (*data.Frame, error) {
+// ToDataFrame flattens an arbitrary struct or slice of structs into a *data.Frame
+func ToDataFrame(name string, toConvert interface{}) (*data.Frame, error) {
 	cr := &converter{
 		fields: make(map[string]*data.Field),
 		tags:   make([]string, 3),
@@ -42,7 +42,7 @@ func ToDataFrames(name string, toConvert interface{}) (data.Frames, error) {
 		return framer.Frames()
 	}
 
-	frame, err := ToDataframe(name, toConvert)
+	frame, err := ToDataFrame(name, toConvert)
 	if err != nil {
 		return nil, err
 	}

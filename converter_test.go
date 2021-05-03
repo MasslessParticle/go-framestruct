@@ -13,7 +13,7 @@ func TestStructs(t *testing.T) {
 	t.Run("it flattens a struct", func(t *testing.T) {
 		strct := simpleStruct{"foo", 36, "baz"}
 
-		frame, err := framestruct.ToDataframe("Results", strct)
+		frame, err := framestruct.ToDataFrame("Results", strct)
 		require.Nil(t, err)
 
 		require.Equal(t, "Results", frame.Name)
@@ -28,7 +28,7 @@ func TestStructs(t *testing.T) {
 		tme := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
 		strct := timeStruct{tme}
 
-		frame, err := framestruct.ToDataframe("Results", strct)
+		frame, err := framestruct.ToDataFrame("Results", strct)
 		require.Nil(t, err)
 
 		require.Equal(t, "Results", frame.Name)
@@ -40,7 +40,7 @@ func TestStructs(t *testing.T) {
 		tme := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
 		strct := timePointerStruct{&tme}
 
-		frame, err := framestruct.ToDataframe("Results", strct)
+		frame, err := framestruct.ToDataFrame("Results", strct)
 		require.Nil(t, err)
 
 		require.Equal(t, "Results", frame.Name)
@@ -51,7 +51,7 @@ func TestStructs(t *testing.T) {
 	t.Run("it flattens a pointer to a struct", func(t *testing.T) {
 		strct := simpleStruct{"foo", 36, "baz"}
 
-		frame, err := framestruct.ToDataframe("Results", &strct)
+		frame, err := framestruct.ToDataFrame("Results", &strct)
 		require.Nil(t, err)
 
 		require.Equal(t, "Results", frame.Name)
@@ -69,7 +69,7 @@ func TestStructs(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", m)
+		frame, err := framestruct.ToDataFrame("results", m)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 1)
@@ -81,7 +81,7 @@ func TestStructs(t *testing.T) {
 		foo := "foo"
 		strct := pointerStruct{&foo}
 
-		frame, err := framestruct.ToDataframe("results", strct)
+		frame, err := framestruct.ToDataFrame("results", strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 1)
@@ -93,7 +93,7 @@ func TestStructs(t *testing.T) {
 	t.Run("it ignores unexported fields", func(t *testing.T) {
 		strct := noExportedFields{"no!"}
 
-		frame, err := framestruct.ToDataframe("results", strct)
+		frame, err := framestruct.ToDataFrame("results", strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 0)
@@ -109,7 +109,7 @@ func TestStructs(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", strct)
+		frame, err := framestruct.ToDataFrame("results", strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 5)
@@ -143,7 +143,7 @@ func TestStructs(t *testing.T) {
 	t.Run("it returns an error when the struct contains an unsupported type", func(t *testing.T) {
 		strct := unsupportedType{32}
 
-		_, err := framestruct.ToDataframe("results", strct)
+		_, err := framestruct.ToDataFrame("results", strct)
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 	})
@@ -155,11 +155,11 @@ func TestStructs(t *testing.T) {
 			},
 		}
 
-		_, err := framestruct.ToDataframe("results", m)
+		_, err := framestruct.ToDataFrame("results", m)
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 
-		_, err = framestruct.ToDataframe("results", []structWithMap{m})
+		_, err = framestruct.ToDataFrame("results", []structWithMap{m})
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 	})
@@ -172,7 +172,7 @@ func TestStructs(t *testing.T) {
 			},
 		}
 
-		_, err := framestruct.ToDataframe("results", strct)
+		_, err := framestruct.ToDataFrame("results", strct)
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 	})
@@ -180,7 +180,7 @@ func TestStructs(t *testing.T) {
 	t.Run("it returns an error when any struct contains an unsupported type", func(t *testing.T) {
 		strct := unsupportedType{32}
 
-		_, err := framestruct.ToDataframe("results", []unsupportedType{strct})
+		_, err := framestruct.ToDataFrame("results", []unsupportedType{strct})
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 	})
@@ -193,7 +193,7 @@ func TestSlices(t *testing.T) {
 			{"foo1", 37, "baz1"},
 		}
 
-		frame, err := framestruct.ToDataframe("results", strct)
+		frame, err := framestruct.ToDataFrame("results", strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 3)
@@ -217,7 +217,7 @@ func TestSlices(t *testing.T) {
 			{"foo1", 37, "baz1"},
 		}
 
-		frame, err := framestruct.ToDataframe("results", &strct)
+		frame, err := framestruct.ToDataFrame("results", &strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 3)
@@ -249,7 +249,7 @@ func TestSlices(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", maps)
+		frame, err := framestruct.ToDataFrame("results", maps)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 3)
@@ -276,7 +276,7 @@ func TestMaps(t *testing.T) {
 			"Thing3": "baz",
 		}
 
-		frame, err := framestruct.ToDataframe("results", m)
+		frame, err := framestruct.ToDataFrame("results", m)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 3)
@@ -295,7 +295,7 @@ func TestMaps(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", m)
+		frame, err := framestruct.ToDataFrame("results", m)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 4)
@@ -322,7 +322,7 @@ func TestMaps(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", m)
+		frame, err := framestruct.ToDataFrame("results", m)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 4)
@@ -349,11 +349,11 @@ func TestMaps(t *testing.T) {
 			},
 		}
 
-		_, err := framestruct.ToDataframe("results", m)
+		_, err := framestruct.ToDataFrame("results", m)
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 
-		_, err = framestruct.ToDataframe("results", []map[string]interface{}{m})
+		_, err = framestruct.ToDataFrame("results", []map[string]interface{}{m})
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 	})
@@ -366,11 +366,11 @@ func TestMaps(t *testing.T) {
 			"Thing4": unsupportedType{36},
 		}
 
-		_, err := framestruct.ToDataframe("results", m)
+		_, err := framestruct.ToDataFrame("results", m)
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 
-		_, err = framestruct.ToDataframe("results", []map[string]interface{}{m})
+		_, err = framestruct.ToDataFrame("results", []map[string]interface{}{m})
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 	})
@@ -380,7 +380,7 @@ func TestStructTags(t *testing.T) {
 	t.Run("it ignores fields when the struct tag is a '-'", func(t *testing.T) {
 		strct := structWithIgnoredTag{"foo", "bar", "baz"}
 
-		frame, err := framestruct.ToDataframe("results", strct)
+		frame, err := framestruct.ToDataFrame("results", strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 2)
@@ -401,7 +401,7 @@ func TestStructTags(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", strct)
+		frame, err := framestruct.ToDataFrame("results", strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 4)
@@ -432,7 +432,7 @@ func TestStructTags(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", strct)
+		frame, err := framestruct.ToDataFrame("results", strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 6)
@@ -465,7 +465,7 @@ func TestStructTags(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", m)
+		frame, err := framestruct.ToDataFrame("results", m)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 4)
@@ -487,7 +487,7 @@ func TestStructTags(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", strct)
+		frame, err := framestruct.ToDataFrame("results", strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 4)
@@ -509,7 +509,7 @@ func TestStructTags(t *testing.T) {
 			},
 		}
 
-		frame, err := framestruct.ToDataframe("results", strct)
+		frame, err := framestruct.ToDataFrame("results", strct)
 		require.Nil(t, err)
 
 		require.Len(t, frame.Fields, 4)
@@ -521,20 +521,20 @@ func TestStructTags(t *testing.T) {
 }
 func TestToDataframe(t *testing.T) {
 	t.Run("it returns an error when invalid types are passed in", func(t *testing.T) {
-		_, err := framestruct.ToDataframe("???", []string{"1", "2"})
+		_, err := framestruct.ToDataFrame("???", []string{"1", "2"})
 		require.Error(t, err)
 
 		m := make(map[string]string)
-		_, err = framestruct.ToDataframe("???", m)
+		_, err = framestruct.ToDataFrame("???", m)
 		require.Error(t, err)
 
-		_, err = framestruct.ToDataframe("???", "can't do a string either")
+		_, err = framestruct.ToDataFrame("???", "can't do a string either")
 		require.Error(t, err)
 
-		_, err = framestruct.ToDataframe("???", time.Now())
+		_, err = framestruct.ToDataFrame("???", time.Now())
 		require.Error(t, err)
 
-		_, err = framestruct.ToDataframe("???", []time.Time{time.Now()})
+		_, err = framestruct.ToDataFrame("???", []time.Time{time.Now()})
 		require.Error(t, err)
 	})
 
@@ -563,7 +563,7 @@ func TestToDataFrames(t *testing.T) {
 		require.Equal(t, "New Frame", frames[0].Name) //Prefer the defined name
 	})
 
-	t.Run("it wraps the converted dataframe in the Frames type", func(t *testing.T) {
+	t.Run("it wraps the converted data frame in the Frames type", func(t *testing.T) {
 		strct := allStructTags{
 			Foo: barBaz{
 				Bar: "should be first",
@@ -605,7 +605,7 @@ func convertStruct(start, end chan struct{}) {
 		case <-end:
 			return
 		default:
-			framestruct.ToDataframe("frame", strct)
+			framestruct.ToDataFrame("frame", strct)
 		}
 	}
 }
