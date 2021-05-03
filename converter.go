@@ -110,6 +110,10 @@ func (c *converter) convertSlice(s reflect.Value) error {
 }
 
 func (c *converter) convertStructFields(v reflect.Value, prefix string) error {
+	if v.Kind() != reflect.Struct {
+		return errors.New("unsupported type: converted types may not contain slices")
+	}
+
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if !exported(field) {

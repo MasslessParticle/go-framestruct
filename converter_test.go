@@ -184,6 +184,14 @@ func TestStructs(t *testing.T) {
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
 	})
+
+	t.Run("it can't convert a struct that contains a slice", func(t *testing.T) {
+		strct := unsupportedTypeSlice{
+			Foo: []string{"1", "2", "3"},
+		}
+		_, err := framestruct.ToDataFrame("???", strct)
+		require.Error(t, err)
+	})
 }
 
 func TestSlices(t *testing.T) {
@@ -373,6 +381,15 @@ func TestMaps(t *testing.T) {
 		_, err = framestruct.ToDataFrame("results", []map[string]interface{}{m})
 		require.Error(t, err)
 		require.Equal(t, "unsupported type int", err.Error())
+	})
+
+	t.Run("it can't convert a map that contains a slice", func(t *testing.T) {
+		m := map[string]interface{}{
+			"Foo": []string{"1", "2", "3"},
+		}
+
+		_, err := framestruct.ToDataFrame("???", m)
+		require.Error(t, err)
 	})
 }
 
@@ -663,6 +680,10 @@ type supportedWithUnsupported struct {
 
 type unsupportedType struct {
 	Foo int
+}
+
+type unsupportedTypeSlice struct {
+	Foo []string
 }
 
 type pointerStruct struct {
