@@ -495,6 +495,28 @@ func TestStructTags(t *testing.T) {
 		require.Equal(t, "bbb", frame.Fields[2].Name)
 		require.Equal(t, "ccc", frame.Fields[3].Name)
 	})
+
+	t.Run("it should ignore whitespace in struct tags", func(t *testing.T) {
+		strct := allStructTagsWhitespace{
+			Foo: barBazWhitespace{
+				Bar: "should be first",
+				Baz: map[string]interface{}{
+					"aaa": "foo",
+					"bbb": "foo",
+					"ccc": "foo",
+				},
+			},
+		}
+
+		frame, err := framestruct.ToDataframe("results", strct)
+		require.Nil(t, err)
+
+		require.Len(t, frame.Fields, 4)
+		require.Equal(t, "zzz", frame.Fields[0].Name)
+		require.Equal(t, "aaa", frame.Fields[1].Name)
+		require.Equal(t, "bbb", frame.Fields[2].Name)
+		require.Equal(t, "ccc", frame.Fields[3].Name)
+	})
 }
 func TestToDataframe(t *testing.T) {
 	t.Run("it returns an error when invalid types are passed in", func(t *testing.T) {
@@ -633,4 +655,13 @@ type timeStruct struct {
 
 type timePointerStruct struct {
 	Time *time.Time `frame:"time"`
+}
+
+type allStructTagsWhitespace struct {
+	Foo barBazWhitespace
+}
+
+type barBazWhitespace struct {
+	Bar string                 `frame:"zzz  ,  omitparent  ,  col0   "`
+	Baz map[string]interface{} `frame:"   ,omitparent"`
 }

@@ -213,7 +213,7 @@ func (c *converter) parseTags(s string) {
 		if m < 0 {
 			break
 		}
-		c.tags[i] = s[:m]
+		c.tags[i] = strings.TrimSpace(s[:m])
 		s = s[m+len(sep):]
 		i++
 	}
