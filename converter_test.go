@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/masslessparticle/go-framestruct"
 	"github.com/stretchr/testify/require"
 )
@@ -551,6 +552,43 @@ func TestToDataframe(t *testing.T) {
 	})
 }
 
+func TestToDataFrames(t *testing.T) {
+	t.Run("it defers to the marhaller if the struct is a Framer", func(t *testing.T) {
+		strct := &mockFramer{}
+		frames, err := framestruct.ToDataFrames("Some Frame", strct)
+		require.Nil(t, err)
+
+		require.True(t, strct.called)
+		require.Len(t, frames, 1)
+		require.Equal(t, "New Frame", frames[0].Name) //Prefer the defined name
+	})
+
+	t.Run("it wraps the converted dataframe in the Frames type", func(t *testing.T) {
+		strct := allStructTags{
+			Foo: barBaz{
+				Bar: "should be first",
+				Baz: map[string]interface{}{
+					"aaa": "foo",
+					"bbb": "foo",
+					"ccc": "foo",
+				},
+			},
+		}
+
+		frames, err := framestruct.ToDataFrames("results", strct)
+		require.Nil(t, err)
+
+		require.Len(t, frames, 1)
+
+		frame := frames[0]
+		require.Len(t, frame.Fields, 4)
+		require.Equal(t, "zzz", frame.Fields[0].Name)
+		require.Equal(t, "aaa", frame.Fields[1].Name)
+		require.Equal(t, "bbb", frame.Fields[2].Name)
+		require.Equal(t, "ccc", frame.Fields[3].Name)
+	})
+}
+
 func convertStruct(start, end chan struct{}) {
 	strct := structWithTags{
 		"foo",
@@ -664,4 +702,14 @@ type allStructTagsWhitespace struct {
 type barBazWhitespace struct {
 	Bar string                 `frame:"zzz  ,  omitparent  ,  col0   "`
 	Baz map[string]interface{} `frame:"   ,omitparent"`
+}
+
+type mockFramer struct {
+	called bool
+}
+
+func (f *mockFramer) Frames() (data.Frames, error) {
+	f.called = true
+	frame := data.NewFrame("New Frame")
+	return []*data.Frame{frame}, nil
 }
