@@ -16,11 +16,11 @@ Structs may contain `map[string]interface{}` and maps may contain structs.
 ### A note on maps
 
 To preserve ordering across runs with maps, framestruct storts fieldnames.
-If you want to control the order use a struct or specialy designed map keys.
+If you want to control the order use a struct or specially designed map keys.
 
 ## Usage
 
-Take a struct with supported types and call `ToDataframe`.
+Take a struct with supported types and call `ToDataFrame`.
 
 ```go
 package main
@@ -57,7 +57,7 @@ func main() {
 		},
 	}
 
-	frame, err := framestruct.ToDataframe("FrameName", strct)
+	frame, err := framestruct.ToDataFrame("FrameName", strct)
 	if err != nil {
 		panic(err)
 	}
@@ -94,9 +94,9 @@ Thing6
 - Use the `frame` struct tag to configure conversion behavior. a custom name.
 - Use `-` to exclude a field from the output.
 - Other flags must be used in the following order
-  1. `fieldname`: The first tag present will override the Dataframe column name. By default, framestruct uses the name of the struct field.
-  1. `omitparent`: When present, will tell framestruct to use the name of `child` rather than `parent.child` as the Dataframe column name.
-  1. `col0`: When present, will make this the 0th column of the Dataframe. Only the first instance of `col0` is respected
+  1. `fieldname`: The first tag present will override the DataFrame column name. By default, framestruct uses the name of the struct field.
+  1. `omitparent`: When present, will tell framestruct to use the name of `child` rather than `parent.child` as the DataFrame column name.
+  1. `col0`: When present, will make this the 0th column of the DataFrame. Only the first instance of `col0` is respected
 
 ### A Note on Maps in struct fields
 

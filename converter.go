@@ -30,9 +30,9 @@ func ToDataFrame(name string, toConvert interface{}) (*data.Frame, error) {
 	return cr.toDataframe(name, toConvert)
 }
 
-// ToDataFrames is a convinence wrapper around ToDataFrame. It will wrap the
+// ToDataFrames is a convenience wrapper around ToDataFrame. It will wrap the
 // converted DataFrame in a data.Frames. Additionally, if the passed type
-// satifies the data.Framer interface, the function will delegate to that
+// satisfies the data.Framer interface, the function will delegate to that
 // for the type conversion. If this function delegates to a data.Framer, it
 // will use the data.Frame name defined by the type rather than passed to this
 // function
